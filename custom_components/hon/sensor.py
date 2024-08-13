@@ -839,7 +839,7 @@ class HonSensorEntity(HonEntity, SensorEntity):
             if not (options := self._device.settings.get("startProgram.program")):
                 raise ValueError 
             self._attr_options = [*options.values, "No Program"]
-            value = options.ids.get(value) # type: ignore
+            value = options.ids.get(value) # type: ignore[attr-defined]
         elif self.entity_description.option_list is not None:
             self._attr_options = list(self.entity_description.option_list.values())
             value = str(get_readable(self.entity_description, value))
