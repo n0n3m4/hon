@@ -80,7 +80,6 @@ SENSORS: dict[str, tuple[SensorEntityDescription, ...]] = {
         HonSensorEntityDescription(
             key="currentElectricityUsed",
             name="Current Electricity Used",
-            state_class=SensorStateClass.MEASUREMENT,
             device_class=SensorDeviceClass.ENERGY,
             native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             icon="mdi:lightning-bolt",
