@@ -40,11 +40,6 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         refresh_token=entry.data.get(CONF_REFRESH_TOKEN, ""),
     ).setup()
 
-    # Save the new refresh token
-    hass.config_entries.async_update_entry(
-        entry, data={**entry.data, CONF_REFRESH_TOKEN: hon.api.auth.refresh_token}
-    )
-
     coordinator: DataUpdateCoordinator[dict[str, Any]] = DataUpdateCoordinator(
         hass, _LOGGER, name=DOMAIN
     )
