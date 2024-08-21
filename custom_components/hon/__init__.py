@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         session=session,
         test_data_path=Path(config_dir),
         refresh_token=entry.data.get(CONF_REFRESH_TOKEN, ""),
-    ).create()
+    ).setup()
 
     # Save the new refresh token
     hass.config_entries.async_update_entry(
@@ -48,7 +48,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     coordinator: DataUpdateCoordinator[dict[str, Any]] = DataUpdateCoordinator(
         hass, _LOGGER, name=DOMAIN
     )
-    hon.subscribe_updates(lambda: hass.add_job(coordinator.async_update_listeners))
+    hon.subscribe_updates(coordinator.async_update_listeners)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.unique_id] = {"hon": hon, "coordinator": coordinator}
@@ -59,7 +59,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
 
 async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
-    refresh_token = hass.data[DOMAIN][entry.unique_id]["hon"].api.auth.refresh_token
+    refresh_token = await hass.data[DOMAIN][entry.unique_id]["hon"]._api._session._auth.get_refresh_token()
 
     hass.config_entries.async_update_entry(
         entry, data={**entry.data, CONF_REFRESH_TOKEN: refresh_token}
