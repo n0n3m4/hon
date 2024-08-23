@@ -1,1 +1,1 @@
-pyhOn @ git+https://github.com/IoTLabs-pl/pyhOn@dev
+pyhOn @ git+https://github.com/IoTLabs-pl/pyhOn@0.18.0-beta
