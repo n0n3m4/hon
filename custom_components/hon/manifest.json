@@ -13,7 +13,7 @@
     "pyhon"
   ],
   "requirements": [
-    "git+https://github.com/IoTLabs-pl/pyhOn@v0.18.0-beta.2#pyhon==0.18.0-beta.2"
+    "git+https://github.com/IoTLabs-pl/pyhOn@v0.18.0-beta.3#pyhon==0.18.0-beta.3"
   ],
-  "version": "0.14.0-beta.13"
+  "version": "0.14.0-beta.14"
 }

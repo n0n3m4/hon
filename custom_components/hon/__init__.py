@@ -54,15 +54,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    refresh_token = await hass.data[DOMAIN][entry.unique_id][
-        "hon"
-    ]._api._session._auth.get_refresh_token()
+    config_entry_data = hass.data[DOMAIN].pop(entry.unique_id)
+    refresh_token = await config_entry_data["hon"].aclose()
 
-    hass.config_entries.async_update_entry(
-        entry, data={**entry.data, CONF_REFRESH_TOKEN: refresh_token}
-    )
+    if CONF_REFRESH_TOKEN not in entry.data:
+        hass.config_entries.async_update_entry(
+            entry, data={**entry.data, CONF_REFRESH_TOKEN: refresh_token}
+        )
+
     unload = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload:
         if not hass.data[DOMAIN]:
-            hass.data.pop(DOMAIN, None)
+            hass.data.pop(DOMAIN)
+
     return unload
