@@ -82,7 +82,7 @@ class HonButtonEntity(HonEntity, ButtonEntity):
         return (
             super().available
             and int(self._device.get("remoteCtrValid", "1")) == 1
-            and self._device.connection
+            and int(self._device.get("connected", 1)) == 1
         )
 
 
@@ -100,10 +100,11 @@ class HonDeviceInfo(HonEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         title = f"{self._device.nick_name} Device Info"
+        diagnostic_info = self._device.yaml_export()
         persistent_notification.create(
-            self._hass, f"````\n```\n{self._device.diagnose}\n```\n````", title
+            self._hass, f"````\n```\n{diagnostic_info}\n```\n````", title
         )
-        _LOGGER.info(self._device.diagnose.replace(" ", "\u200B "))
+        _LOGGER.info(diagnostic_info.replace(" ", "\u200B "))
 
 
 class HonDataArchive(HonEntity, ButtonEntity):
@@ -122,7 +123,7 @@ class HonDataArchive(HonEntity, ButtonEntity):
         if (config_dir := self._hass.config.config_dir) is None:
             raise ValueError("Missing Config Dir")
         path = Path(config_dir) / "www"
-        data = await self._device.data_archive(path)
+        data = await self._device.zip_archive(path)
         title = f"{self._device.nick_name} Data Archive"
         text = (
             f'<a href="/local/{data}" target="_blank">{data}</a> <br/><br/> '

@@ -74,7 +74,7 @@ class HonLockEntity(HonEntity, LockEntity):
         return (
             super().available
             and int(self._device.get("remoteCtrValid", 1)) == 1
-            and self._device.connection
+            and int(self._device.get("connected", 1)) == 1
         )
 
     @callback

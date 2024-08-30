@@ -10,7 +10,7 @@ from homeassistant.helpers import config_validation as cv, aiohttp_client
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pyhon import Hon
 
-from .const import DOMAIN, PLATFORMS, MOBILE_ID, CONF_REFRESH_TOKEN
+from .const import DOMAIN, PLATFORMS, CONF_REFRESH_TOKEN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,7 +34,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hon = await Hon(
         email=entry.data[CONF_EMAIL],
         password=entry.data[CONF_PASSWORD],
-        mobile_id=MOBILE_ID,
         session=session,
         test_data_path=Path(config_dir),
         refresh_token=entry.data.get(CONF_REFRESH_TOKEN, ""),
