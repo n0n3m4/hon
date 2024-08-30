@@ -7,7 +7,7 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
 )
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pyhon.appliance import HonAppliance
+from pyhon.appliances import Appliance
 
 from .const import DOMAIN
 from .typedefs import HonEntityDescription
@@ -21,14 +21,14 @@ class HonEntity(CoordinatorEntity[DataUpdateCoordinator[dict[str, Any]]]):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: Optional[HonEntityDescription] = None,
     ) -> None:
         self.coordinator = hass.data[DOMAIN][entry.unique_id]["coordinator"]
         super().__init__(self.coordinator)
         self._hon = hass.data[DOMAIN][entry.unique_id]["hon"]
         self._hass = hass
-        self._device: HonAppliance = device
+        self._device: Appliance = device
 
         if description is not None:
             self.entity_description = description

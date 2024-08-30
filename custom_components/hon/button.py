@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.appliance import HonAppliance
+from pyhon.appliances import Appliance
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -88,7 +88,7 @@ class HonButtonEntity(HonEntity, ButtonEntity):
 
 class HonDeviceInfo(HonEntity, ButtonEntity):
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, device: HonAppliance
+        self, hass: HomeAssistant, entry: ConfigEntry, device: Appliance
     ) -> None:
         super().__init__(hass, entry, device)
 
@@ -108,7 +108,7 @@ class HonDeviceInfo(HonEntity, ButtonEntity):
 
 class HonDataArchive(HonEntity, ButtonEntity):
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, device: HonAppliance
+        self, hass: HomeAssistant, entry: ConfigEntry, device: Appliance
     ) -> None:
         super().__init__(hass, entry, device)
 

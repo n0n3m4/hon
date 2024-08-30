@@ -10,8 +10,8 @@ from homeassistant.components.light import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.appliance import HonAppliance
-from pyhon.parameter.range import HonParameterRange
+from pyhon.appliances import Appliance
+from pyhon.parameter import RangeParameter
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -74,11 +74,11 @@ class HonLightEntity(HonEntity, LightEntity):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: LightEntityDescription,
     ) -> None:
         light = device.settings.get(description.key)
-        if not isinstance(light, HonParameterRange):
+        if not isinstance(light, RangeParameter):
             raise ValueError()
         self._light_range = (light.min, light.max)
         self._attr_supported_color_modes: set[ColorMode] = set()
@@ -98,7 +98,7 @@ class HonLightEntity(HonEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on or control the light."""
         light = self._device.settings.get(self.entity_description.key)
-        if not isinstance(light, HonParameterRange):
+        if not isinstance(light, RangeParameter):
             raise ValueError()
         if ColorMode.BRIGHTNESS in self._attr_supported_color_modes:
             percent = int(100 / 255 * kwargs.get(ATTR_BRIGHTNESS, 128))
@@ -114,7 +114,7 @@ class HonLightEntity(HonEntity, LightEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         light = self._device.settings.get(self.entity_description.key)
-        if not isinstance(light, HonParameterRange):
+        if not isinstance(light, RangeParameter):
             raise ValueError()
         light.value = light.min
         await self._device.commands[self._command].send()
@@ -124,7 +124,7 @@ class HonLightEntity(HonEntity, LightEntity):
     def brightness(self) -> int | None:
         """Return the brightness of the light."""
         light = self._device.settings.get(self.entity_description.key)
-        if not isinstance(light, HonParameterRange):
+        if not isinstance(light, RangeParameter):
             raise ValueError()
         if light.value == light.min:
             return None

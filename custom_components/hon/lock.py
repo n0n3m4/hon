@@ -5,8 +5,7 @@ from homeassistant.components.lock import LockEntity, LockEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.parameter.base import HonParameter
-from pyhon.parameter.range import HonParameterRange
+from pyhon.parameter import Parameter, RangeParameter
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -52,9 +51,9 @@ class HonLockEntity(HonEntity, LockEntity):
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock method."""
         setting = self._device.settings.get(f"settings.{self.entity_description.key}")
-        if type(setting) == HonParameter or setting is None:
+        if type(setting) == Parameter or setting is None:
             return
-        setting.value = setting.max if isinstance(setting, HonParameterRange) else 1
+        setting.value = setting.max if isinstance(setting, RangeParameter) else 1
         self.async_write_ha_state()
         await self._device.commands["settings"].send()
         self.coordinator.async_set_updated_data({})
@@ -62,9 +61,9 @@ class HonLockEntity(HonEntity, LockEntity):
     async def async_unlock(self, **kwargs: Any) -> None:
         """Unlock method."""
         setting = self._device.settings[f"settings.{self.entity_description.key}"]
-        if type(setting) == HonParameter:
+        if type(setting) == Parameter:
             return
-        setting.value = setting.min if isinstance(setting, HonParameterRange) else 0
+        setting.value = setting.min if isinstance(setting, RangeParameter) else 0
         self.async_write_ha_state()
         await self._device.commands["settings"].send()
         self.coordinator.async_set_updated_data({})

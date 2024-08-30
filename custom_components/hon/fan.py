@@ -14,8 +14,8 @@ from homeassistant.util.percentage import (
     percentage_to_ranged_value,
     ranged_value_to_percentage,
 )
-from pyhon.appliance import HonAppliance
-from pyhon.parameter.range import HonParameterRange
+from pyhon.appliances import Appliance
+from pyhon.parameter import RangeParameter
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -57,11 +57,11 @@ class HonFanEntity(HonEntity, FanEntity):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: FanEntityDescription,
     ) -> None:
         self._attr_supported_features = FanEntityFeature.SET_SPEED
-        self._wind_speed: HonParameterRange
+        self._wind_speed: RangeParameter
         self._speed_range: tuple[int, int]
         self._command, self._parameter = description.key.split(".")
 
@@ -116,7 +116,7 @@ class HonFanEntity(HonEntity, FanEntity):
     @callback
     def _handle_coordinator_update(self, update: bool = True) -> None:
         wind_speed = self._device.settings.get(self.entity_description.key)
-        if isinstance(wind_speed, HonParameterRange) and len(wind_speed.values) > 1:
+        if isinstance(wind_speed, RangeParameter) and len(wind_speed.values) > 1:
             self._wind_speed = wind_speed
             self._speed_range = (
                 int(self._wind_speed.values[1]),

@@ -8,8 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.parameter.base import HonParameter
-from pyhon.parameter.range import HonParameterRange
+from pyhon.parameter import Parameter, RangeParameter
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -441,18 +440,18 @@ class HonSwitchEntity(HonEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         setting = self._device.settings[f"settings.{self.entity_description.key}"]
-        if type(setting) == HonParameter:
+        if type(setting) == Parameter:
             return
-        setting.value = setting.max if isinstance(setting, HonParameterRange) else 1
+        setting.value = setting.max if isinstance(setting, RangeParameter) else 1
         self.async_write_ha_state()
         await self._device.commands["settings"].send()
         self.coordinator.async_set_updated_data({})
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         setting = self._device.settings[f"settings.{self.entity_description.key}"]
-        if type(setting) == HonParameter:
+        if type(setting) == Parameter:
             return
-        setting.value = setting.min if isinstance(setting, HonParameterRange) else 0
+        setting.value = setting.min if isinstance(setting, RangeParameter) else 0
         self.async_write_ha_state()
         await self._device.commands["settings"].send()
         self.coordinator.async_set_updated_data({})
@@ -467,7 +466,7 @@ class HonSwitchEntity(HonEntity, SwitchEntity):
         if self._device.get("attributes.lastConnEvent.category") == "DISCONNECTED":
             return False
         setting = self._device.settings[f"settings.{self.entity_description.key}"]
-        if isinstance(setting, HonParameterRange) and len(setting.values) < 2:
+        if isinstance(setting, RangeParameter) and len(setting.values) < 2:
             return False
         return True
 
@@ -537,17 +536,17 @@ class HonConfigSwitchEntity(HonEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         setting = self._device.settings[self.entity_description.key]
-        if type(setting) == HonParameter:
+        if type(setting) == Parameter:
             return
-        setting.value = setting.max if isinstance(setting, HonParameterRange) else "1"
+        setting.value = setting.max if isinstance(setting, RangeParameter) else "1"
         self.coordinator.async_set_updated_data({})
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         setting = self._device.settings[self.entity_description.key]
-        if type(setting) == HonParameter:
+        if type(setting) == Parameter:
             return
-        setting.value = setting.min if isinstance(setting, HonParameterRange) else "0"
+        setting.value = setting.min if isinstance(setting, RangeParameter) else "0"
         self.coordinator.async_set_updated_data({})
         self.async_write_ha_state()
 

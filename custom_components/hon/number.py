@@ -11,8 +11,8 @@ from homeassistant.const import UnitOfTime, UnitOfTemperature
 from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.appliance import HonAppliance
-from pyhon.parameter.range import HonParameterRange
+from pyhon.appliances import Appliance
+from pyhon.parameter import RangeParameter
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -231,13 +231,13 @@ class HonNumberEntity(HonEntity, NumberEntity):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: HonNumberEntityDescription,
     ) -> None:
         super().__init__(hass, entry, device, description)
 
         self._data = device.settings[description.key]
-        if isinstance(self._data, HonParameterRange):
+        if isinstance(self._data, RangeParameter):
             self._attr_native_max_value = self._data.max
             self._attr_native_min_value = self._data.min
             self._attr_native_step = self._data.step
@@ -250,7 +250,7 @@ class HonNumberEntity(HonEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         setting = self._device.settings[self.entity_description.key]
-        if isinstance(setting, HonParameterRange):
+        if isinstance(setting, RangeParameter):
             setting.value = value
         command = self.entity_description.key.split(".")[0]
         await self._device.commands[command].send()
@@ -261,7 +261,7 @@ class HonNumberEntity(HonEntity, NumberEntity):
     @callback
     def _handle_coordinator_update(self, update: bool = True) -> None:
         setting = self._device.settings[self.entity_description.key]
-        if isinstance(setting, HonParameterRange):
+        if isinstance(setting, RangeParameter):
             self._attr_native_max_value = setting.max
             self._attr_native_min_value = setting.min
             self._attr_native_step = setting.step
@@ -286,13 +286,13 @@ class HonConfigNumberEntity(HonEntity, NumberEntity):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: HonConfigNumberEntityDescription,
     ) -> None:
         super().__init__(hass, entry, device, description)
 
         self._data = device.settings[description.key]
-        if isinstance(self._data, HonParameterRange):
+        if isinstance(self._data, RangeParameter):
             self._attr_native_max_value = self._data.max
             self._attr_native_min_value = self._data.min
             self._attr_native_step = self._data.step
@@ -305,7 +305,7 @@ class HonConfigNumberEntity(HonEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         setting = self._device.settings[self.entity_description.key]
-        if isinstance(setting, HonParameterRange):
+        if isinstance(setting, RangeParameter):
             setting.value = value
         self.coordinator.async_set_updated_data({})
 
@@ -317,7 +317,7 @@ class HonConfigNumberEntity(HonEntity, NumberEntity):
     @callback
     def _handle_coordinator_update(self, update: bool = True) -> None:
         setting = self._device.settings[self.entity_description.key]
-        if isinstance(setting, HonParameterRange):
+        if isinstance(setting, RangeParameter):
             self._attr_native_max_value = setting.max
             self._attr_native_min_value = setting.min
             self._attr_native_step = setting.step

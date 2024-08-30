@@ -21,8 +21,8 @@ from homeassistant.const import (
 )
 from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.appliance import HonAppliance
-from pyhon.parameter.range import HonParameterRange
+from pyhon.appliances import Appliance
+from pyhon.parameter import RangeParameter
 
 from .const import HON_HVAC_MODE, HON_FAN, DOMAIN, HON_HVAC_PROGRAM
 from .entity import HonEntity
@@ -131,7 +131,7 @@ class HonACClimateEntity(HonEntity, ClimateEntity):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: HonACClimateEntityDescription,
     ) -> None:
         super().__init__(hass, entry, device, description)
@@ -164,7 +164,7 @@ class HonACClimateEntity(HonEntity, ClimateEntity):
 
     def _set_temperature_bound(self) -> None:
         temperature = self._device.settings["settings.tempSel"]
-        if not isinstance(temperature, HonParameterRange):
+        if not isinstance(temperature, RangeParameter):
             raise ValueError
         self._attr_max_temp = temperature.max
         self._attr_target_temperature_step = temperature.step
@@ -300,7 +300,7 @@ class HonClimateEntity(HonEntity, ClimateEntity):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        device: HonAppliance,
+        device: Appliance,
         description: HonClimateEntityDescription,
     ) -> None:
         super().__init__(hass, entry, device, description)
@@ -413,7 +413,7 @@ class HonClimateEntity(HonEntity, ClimateEntity):
 
     def _set_temperature_bound(self) -> None:
         temperature = self._device.settings[self.entity_description.key]
-        if not isinstance(temperature, HonParameterRange):
+        if not isinstance(temperature, RangeParameter):
             raise ValueError
         self._attr_max_temp = temperature.max
         self._attr_target_temperature_step = temperature.step
