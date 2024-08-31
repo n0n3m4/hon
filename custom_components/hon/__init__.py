@@ -2,15 +2,16 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from pyhon import Hon
 import voluptuous as vol  # type: ignore[import-untyped]
-from homeassistant.core import HomeAssistant
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
-from homeassistant.helpers import config_validation as cv, aiohttp_client
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import aiohttp_client, config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pyhon import Hon
 
-from .const import DOMAIN, PLATFORMS, CONF_REFRESH_TOKEN
+from .const import CONF_REFRESH_TOKEN, DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,13 +32,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = aiohttp_client.async_get_clientsession(hass)
     if (config_dir := hass.config.config_dir) is None:
         raise ValueError("Missing Config Dir")
+    email = entry.data[CONF_EMAIL]
+    password = entry.data[CONF_PASSWORD]
+    refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
     hon = await Hon(
-        email=entry.data[CONF_EMAIL],
-        password=entry.data[CONF_PASSWORD],
+        email=email,
+        password=password,
         session=session,
+        mqtt=True,
         test_data_path=Path(config_dir),
-        refresh_token=entry.data.get(CONF_REFRESH_TOKEN, ""),
+        refresh_token=refresh_token,
     ).setup()
+
+    if (new_refresh_token := hon.auth.refresh_token) != refresh_token:
+        hass.config_entries.async_update_entry(
+            entry, data={**entry.data, CONF_REFRESH_TOKEN: new_refresh_token}
+        )
 
     coordinator: DataUpdateCoordinator[dict[str, Any]] = DataUpdateCoordinator(
         hass, _LOGGER, name=DOMAIN
@@ -53,16 +63,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    config_entry_data = hass.data[DOMAIN].pop(entry.unique_id)
-    refresh_token = await config_entry_data["hon"].aclose()
-
-    if CONF_REFRESH_TOKEN not in entry.data:
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, CONF_REFRESH_TOKEN: refresh_token}
-        )
-
     unload = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload:
+        await hass.data[DOMAIN].pop(entry.unique_id)["hon"].aclose()
+
         if not hass.data[DOMAIN]:
             hass.data.pop(DOMAIN)
 
