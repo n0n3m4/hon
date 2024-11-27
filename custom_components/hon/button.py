@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from pyhon.appliance import HonAppliance
+from pyhon.appliances import Appliance
 
 from .const import DOMAIN
 from .entity import HonEntity
@@ -74,21 +74,21 @@ class HonButtonEntity(HonEntity, ButtonEntity):
     entity_description: ButtonEntityDescription
 
     async def async_press(self) -> None:
-        await self._device.commands[self.entity_description.key].send()
+        await self._appliance.commands[self.entity_description.key].send()
 
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
         return (
             super().available
-            and int(self._device.get("remoteCtrValid", "1")) == 1
-            and self._device.connection
+            and int(self._appliance.get("remoteCtrValid", "1")) == 1
+            and self._appliance.connection
         )
 
 
 class HonDeviceInfo(HonEntity, ButtonEntity):
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, device: HonAppliance
+        self, hass: HomeAssistant, entry: ConfigEntry, device: Appliance
     ) -> None:
         super().__init__(hass, entry, device)
 
@@ -99,16 +99,16 @@ class HonDeviceInfo(HonEntity, ButtonEntity):
         self._attr_entity_registry_enabled_default = False
 
     async def async_press(self) -> None:
-        title = f"{self._device.nick_name} Device Info"
+        title = f"{self._appliance.nick_name} Device Info"
         persistent_notification.create(
-            self._hass, f"````\n```\n{self._device.diagnose}\n```\n````", title
+            self._hass, f"````\n```\n{self._appliance.diagnose}\n```\n````", title
         )
-        _LOGGER.info(self._device.diagnose.replace(" ", "\u200B "))
+        _LOGGER.info(self._appliance.diagnose.replace(" ", "\u200B "))
 
 
 class HonDataArchive(HonEntity, ButtonEntity):
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, device: HonAppliance
+        self, hass: HomeAssistant, entry: ConfigEntry, device: Appliance
     ) -> None:
         super().__init__(hass, entry, device)
 
@@ -122,8 +122,8 @@ class HonDataArchive(HonEntity, ButtonEntity):
         if (config_dir := self._hass.config.config_dir) is None:
             raise ValueError("Missing Config Dir")
         path = Path(config_dir) / "www"
-        data = await self._device.data_archive(path)
-        title = f"{self._device.nick_name} Data Archive"
+        data = await self._appliance.data_archive(path)
+        title = f"{self._appliance.nick_name} Data Archive"
         text = (
             f'<a href="/local/{data}" target="_blank">{data}</a> <br/><br/> '
             f"Use this data for [GitHub Issues of Haier hOn](https://github.com/Andre0512/hon).<br/>"

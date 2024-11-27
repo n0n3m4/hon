@@ -1,18 +1,12 @@
 {
   "domain": "hon",
   "name": "Haier hOn",
-  "codeowners": [
-    "@Andre0512"
-  ],
+  "codeowners": ["@Andre0512"],
   "config_flow": true,
   "documentation": "https://github.com/Andre0512/hon/",
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/Andre0512/hon/issues",
-  "loggers": [
-    "pyhon"
-  ],
-  "requirements": [
-    "pyhOn @ git+https://github.com/IoTLabs-pl/pyhOn@dev"
-  ],
+  "loggers": ["pyhon"],
+  "requirements": ["pyhOn @ git+https://github.com/IoTLabs-pl/pyhOn@dev"],
   "version": "0.14.0-dev"
 }
