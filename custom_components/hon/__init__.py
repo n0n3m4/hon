@@ -50,7 +50,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await update_certifi_certificates(hass)
         return False
 
-
     if (new_refresh_token := hon.auth.refresh_token) != refresh_token:
         hass.config_entries.async_update_entry(
             entry, data={**entry.data, CONF_REFRESH_TOKEN: new_refresh_token}
