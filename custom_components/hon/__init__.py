@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from ssl import SSLCertVerificationError
 from typing import Any
 
 from aiohttp.client_exceptions import ClientConnectorCertificateError
