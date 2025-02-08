@@ -1,7 +1,9 @@
 import logging
 from pathlib import Path
+from ssl import SSLCertVerificationError
 from typing import Any
 
+from aiohttp.client_exceptions import ClientConnectorCertificateError
 from pyhon import Hon
 import voluptuous as vol  # type: ignore[import-untyped]
 
@@ -12,6 +14,7 @@ from homeassistant.helpers import aiohttp_client, config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import CONF_REFRESH_TOKEN, DOMAIN, PLATFORMS
+from .ssl import update_certifi_certificates
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,14 +38,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     email = entry.data[CONF_EMAIL]
     password = entry.data[CONF_PASSWORD]
     refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
-    hon = await Hon(
-        email=email,
-        password=password,
-        session=session,
-        mqtt=True,
-        test_data_path=Path(config_dir),
-        refresh_token=refresh_token,
-    ).setup()
+    try:
+        hon = await Hon(
+            email=email,
+            password=password,
+            session=session,
+            mqtt=True,
+            test_data_path=Path(config_dir),
+            refresh_token=refresh_token,
+        ).setup()
+    except ClientConnectorCertificateError:
+        await update_certifi_certificates(hass)
+        return
+
 
     if (new_refresh_token := hon.auth.refresh_token) != refresh_token:
         hass.config_entries.async_update_entry(
