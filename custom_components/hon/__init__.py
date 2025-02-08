@@ -48,7 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ).setup()
     except ClientConnectorCertificateError:
         await update_certifi_certificates(hass)
-        return
+        return False
 
 
     if (new_refresh_token := hon.auth.refresh_token) != refresh_token:
