@@ -1,19 +1,19 @@
 from dataclasses import dataclass
+from typing import ClassVar
 from homeassistant.components import binary_sensor
 
-from .common import async_setup_entry_factory, Entity, EntityDescription
+from .common import async_setup_entry_factory, EntityDescription, ParameterBasedEntity
 
 
 class BinarySensorEntity(
-    Entity,
+    ParameterBasedEntity,
     binary_sensor.BinarySensorEntity,
 ):
     entity_description: "BinarySensorEntityDescription"
 
     @property
     def is_on(self) -> bool:
-        ed = self.entity_description
-        return ed.get_value(self._appliance) != ed.inverted
+        return bool(self._source.data.value) != self.entity_description.inverted
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -22,115 +22,103 @@ class BinarySensorEntityDescription(
     binary_sensor.BinarySensorEntityDescription,
 ):
     inverted: bool = False
-    entity_cls: type[BinarySensorEntity] = BinarySensorEntity
+    entity_cls: ClassVar[type[BinarySensorEntity]] = BinarySensorEntity
 
 
 _DeviceClass = binary_sensor.BinarySensorDeviceClass
 
-
+# TODO: Should entities names be suffixed with "Status"?
 ENTITIES = [
     BinarySensorEntityDescription(
-        name="Connection",
-        device_class=_DeviceClass.CONNECTIVITY,
-        value_picker=lambda a: a.connected,
+        key="ch2oCleaningStatus",
     ),
+    # TODO: Generic appliance data cluster not implemented
+    # BinarySensorEntityDescription(
+    #     name="Connection",
+    #     device_class=_DeviceClass.CONNECTIVITY,
+    #     value_picker=lambda a: a.connected,
+    # ),
     BinarySensorEntityDescription(
-        name="Door",
-        device_class=_DeviceClass.DOOR,
-        translation_key="door_open",
-        key="doorStatus",
-    ),
-    BinarySensorEntityDescription(
-        name="Filter Replacement",
-        device_class=_DeviceClass.PROBLEM,
-        key="filterChangeStatusLocal",
-    ),
-    BinarySensorEntityDescription(
-        name="Ch2O Cleaning Status",
-    ),
-    BinarySensorEntityDescription(
-        name="Salt Level",
-        device_class=_DeviceClass.PROBLEM,
-        icon="mdi:shaker-outline",
-        key="saltStatus",
-    ),
-    BinarySensorEntityDescription(
-        name="Rinse Aid",
-        device_class=_DeviceClass.PROBLEM,
-        icon="mdi:spray-bottle",
-        key="rinseAidStatus",
-    ),
-    BinarySensorEntityDescription(
-        icon="mdi:snowflake",
-        name="Super Cool",
-        device_class=_DeviceClass.RUNNING,
-        key="quickModeZ1",
-    ),
-    BinarySensorEntityDescription(
-        icon="mdi:snowflake-variant",
-        name="Super Freeze",
-        device_class=_DeviceClass.RUNNING,
-        key="quickModeZ2",
+        key="doorLockStatus",
+        device_class=_DeviceClass.LOCK,
+        inverted=True,
     ),
     *(
         BinarySensorEntityDescription(
-            name=f"{name} Door {zone}".strip(),
+            key=f"door{i}StatusZ{zone}".removesuffix("Z0"),
+            name=f"{name} Door {i}".strip(),
             device_class=_DeviceClass.DOOR,
             icon=icon,
-            translation_key=f"{name.lower()}_door",
-            key=f"door{zone}Status{key_suffix}",
+            translation_key=f"door_{name}".removesuffix("_").lower(),
         )
-        for zone in ("", "2")
-        for name, icon, key_suffix in (
-            ("Fridge", "mdi:fridge-top", "Z1"),
-            ("Freezer", "mdi:fridge-bottom", "Z2"),
+        for i in ("", "2")
+        for zone, (name, icon) in enumerate(
+            (
+                ("", None),
+                ("Fridge", "mdi:fridge-top"),
+                ("Freezer", "mdi:fridge-bottom"),
+            ),
         )
     ),
     BinarySensorEntityDescription(
-        name="Auto-Set Mode",
-        icon="mdi:thermometer-auto",
-        device_class=_DeviceClass.RUNNING,
-        translation_key="auto_set",
-        key="intelligenceMode",
+        key="filterChangeStatusLocal",
+        # name="Filter Replacement",
+        device_class=_DeviceClass.PROBLEM,
     ),
     BinarySensorEntityDescription(
-        name="Holiday Mode",
+        key="hobLockStatus",
+        device_class=_DeviceClass.LOCK,
+        inverted=True,
+    ),
+    BinarySensorEntityDescription(
+        key="holidayMode",
         icon="mdi:palm-tree",
         device_class=_DeviceClass.RUNNING,
     ),
     BinarySensorEntityDescription(
-        name="Hot Status",
+        key="hotStatus",
         device_class=_DeviceClass.HEAT,
-        translation_key="still_hot",
+        # translation_key="still_hot",
     ),
     BinarySensorEntityDescription(
-        name="Pan Status",
+        key="intelligenceMode",
+        icon="mdi:thermometer-auto",
+        device_class=_DeviceClass.RUNNING,
+        # translation_key="auto_set",
+    ),
+    BinarySensorEntityDescription(
+        key="onOffStatus",
+        device_class=_DeviceClass.RUNNING,
+        icon="mdi:power-cycle",
+    ),
+    BinarySensorEntityDescription(
+        key="panStatus",
         icon="mdi:pot-mix",
     ),
     BinarySensorEntityDescription(
-        name="Child Lock",
-        device_class=_DeviceClass.LOCK,
-        inverted=True,
-        key="hobLockStatus",
-    ),
-    # TODO: Conflict here
-    BinarySensorEntityDescription(
-        name="On",
-        device_class=_DeviceClass.RUNNING,
-        icon="mdi:power-cycle",
-        value_picker=lambda a: a.attributes["parameters"]["onOffStatus"],
+        key="rinseAidStatus",
+        device_class=_DeviceClass.PROBLEM,
+        icon="mdi:spray-bottle",
     ),
     BinarySensorEntityDescription(
-        name="On",
-        device_class=_DeviceClass.RUNNING,
-        icon="mdi:power-cycle",
-        key="onOffStatus",
+        key="saltStatus",
+        device_class=_DeviceClass.PROBLEM,
+        icon="mdi:shaker-outline",
     ),
-    BinarySensorEntityDescription(
-        name="Door Lock",
-        device_class=_DeviceClass.LOCK,
-        inverted=True,
-        key="doorLockStatus",
+    *(
+        BinarySensorEntityDescription(
+            key=f"quickModeZ{zone}",
+            # name=name,
+            icon=icon,
+            device_class=_DeviceClass.RUNNING,
+        )
+        for zone, (name, icon) in enumerate(
+            (
+                ("Super Cool", "mdi:snowflake"),
+                ("Super Freeze", "mdi:snowflake-variant"),
+            ),
+            1,
+        )
     ),
 ]
 

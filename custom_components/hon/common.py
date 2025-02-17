@@ -1,14 +1,17 @@
-from .const import DOMAIN
-from typing import Iterable, TYPE_CHECKING, Callable, Any
-from homeassistant.helpers.device_registry import format_mac
-
-from dataclasses import dataclass
 from functools import cached_property
+from .const import DOMAIN
+from typing import Generic, Iterable, TYPE_CHECKING, Any, TypeVar
+from homeassistant.helpers.device_registry import format_mac
+from dataclasses import dataclass
 from homeassistant.helpers import entity
+from homeassistant.helpers.typing import UNDEFINED
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
+from pyhon.entities.parameter import Parameter
+from pyhon.entities.observer import Subscriber
+# from pyhon.commands import HonCommand as Command
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -16,56 +19,63 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from pyhon import Hon
-    from pyhon.appliances import Appliance
-    from pyhon.attributes import Attribute
+    from pyhon.entities.appliance import Appliance
+
+from logging import getLogger
+
+T = TypeVar("T")
+
+
+_LOGGER = getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
 class EntityDescription(entity.EntityDescription):
+    # TODO: Remove entity_cls and introspect the entity class
+    # from the EntitySubclasses entity_description fields
     entity_cls: type["Entity"]
-    # TODO: Make value_picker optional
-    # with default as getting attribute by name
-    value_picker: Callable[["Appliance"], "Attribute"] | None = None
 
-    key: str | None = None
+    def __post_init__(self):
+        key = self.key
+        if "." in key:
+            """Removes the domain command prefix from the key"""
+            key = key.rsplit(".", 1)[-1]
 
-    @cached_property
-    def fallback_key(self) -> str:
-        return self.name.lower().replace(" ", "_")
+        if key[-1].isdigit() and key[-2] == "Z":
+            """Remove zone suffix from the key"""
+            key = f"{key[:-2]} {key[-1]}"
 
-    @cached_property
-    def cc_key(self) -> str:
-        k = "".join(word.capitalize() for word in self.name.split())
-        return f"{k[0].lower()}{k[1:]}"
+        if not self.name or self.name is UNDEFINED:
+            """Converts the camelCase key to a human readable name"""
+            name = key[0].upper() + "".join(
+                f" {c}" if c.isupper() else c for c in key[1:]
+            )
+            object.__setattr__(self, "name", name)
 
-    # TODO: Optional Cluster parameter:
-    # - for getting attribute from specific cluster (attributes or settings)
-    # Setting are used for non trivial entity categories
-    # After that, remove try-except block from get_value method
-    def get(self, appliance: "Appliance"):
-        if self.value_picker:
-            return self.value_picker(appliance)
+        if not self.translation_key:
+            """Converts the camelCase key to a snake_case translation key"""
+            translation_key = "".join(
+                f"_{c.lower()}" if c.isupper() else c for c in key
+            )
+            object.__setattr__(self, "translation_key", translation_key)
 
-        return appliance.attributes[self.key or self.cc_key]
-
-    def get_value(self, appliance: "Appliance"):
-        try:
-            return self.get(appliance).value
-        except AttributeError:
-            return self.get(appliance)
-
-    def is_applicable(self, appliance: "Appliance") -> bool:
-        try:
-            self.get(appliance)
-            return True
-        except (KeyError, AttributeError):
-            return False
-
+@dataclass(frozen=True, kw_only=True)
+class CmdParameterEntityDescription(EntityDescription):
+    command: str
 
 # TODO: Fix Coordinator data typing
-class Entity(CoordinatorEntity[DataUpdateCoordinator[dict[str, "Any"]]]):
+class Entity(Generic[T], CoordinatorEntity[DataUpdateCoordinator[dict[str, Any]]]):
     _attr_has_entity_name = True
     _attr_should_poll = False
+
+    _source: T
+
+    @classmethod
+    def try_create(cls, *args, **kwargs):
+        try:
+            return cls(*args, **kwargs)
+        except (AttributeError, KeyError):
+            return None
 
     def __init__(
         self,
@@ -74,28 +84,50 @@ class Entity(CoordinatorEntity[DataUpdateCoordinator[dict[str, "Any"]]]):
         appliance: "Appliance",
         description: EntityDescription,
     ) -> None:
-        super().__init__(hass.data[DOMAIN][entry.unique_id]["coordinator"])
-        mac = format_mac(appliance.mac_address)
+        self.appliance = appliance
+        self.entity_description = description
 
-        self._attr_unique_id = f"{mac}-{description.key or description.fallback_key}"
-        self._attr_translation_key = (
-            description.translation_key or description.fallback_key
-        )
+        if bool(self._source) is False:
+            raise KeyError(f"Entity source for key: {description.key} not found")
+
+        mac = format_mac(appliance.data.mac_address)
+
+        self._attr_unique_id = f"{mac}-{description.key}"
         self._attr_device_info = entity.DeviceInfo(
             identifiers={(DOMAIN, mac)},
-            manufacturer=appliance.brand,
-            name=appliance.nick_name,
-            model=appliance.model_name,
-            model_id=str(appliance.model_id),
-            sw_version=appliance.get("fwVersion", ""),
-            serial_number=appliance.get("serialNumber", ""),
+            manufacturer=appliance.data.brand,
+            model_id=str(appliance.data.appliance_model_id),
+            model=appliance.data.model_name,
+            name=appliance.data.nick_name,
+            serial_number=appliance.data.serial_number,
+            sw_version=appliance.data.fw_version,
         )
 
-        self.entity_description = description
-        self._appliance = appliance
+        super().__init__(hass.data[DOMAIN][entry.unique_id]["coordinator"])
 
 
-def async_setup_entry_factory(entitity_descriptions: Iterable["EntityDescription"]):
+class ParameterBasedEntity(Entity[Parameter], Subscriber[Parameter]):
+    @cached_property
+    def _source(self) -> Parameter:
+        s = self.appliance.parameters[self.entity_description.key]
+        s.subscribe(self)
+        return s
+
+    def update(self, data: Parameter) -> None:
+        self.async_write_ha_state()
+
+
+class RemoteControlEntity(Generic[T], Entity[T]):
+    @property
+    def available(self) -> bool:
+        return (
+            super().available
+            and (p := self.appliance.parameters.get("remoteCtrValid")) is not None
+            and p.data.value == 1
+        )
+
+
+def async_setup_entry_factory(entity_descriptions: Iterable[EntityDescription]):
     async def async_setup_entry(
         hass: "HomeAssistant",
         entry: "ConfigEntry",
@@ -104,10 +136,10 @@ def async_setup_entry_factory(entitity_descriptions: Iterable["EntityDescription
         hon: "Hon" = hass.data[DOMAIN][entry.unique_id]["hon"]
 
         async_add_entities(
-            description.entity_cls(hass, entry, appliance, description)
-            for appliance in hon.appliances
-            for description in entitity_descriptions
-            if description.is_applicable(appliance)
+            entity
+            for a in hon.appliances
+            for d in entity_descriptions
+            if (entity := d.entity_cls.try_create(hass, entry, a, d))
         )
 
     return async_setup_entry

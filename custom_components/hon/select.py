@@ -2,43 +2,38 @@ from dataclasses import dataclass
 from typing import ClassVar
 from homeassistant.components import select, sensor
 from homeassistant.helpers.entity import EntityCategory
+from pyhon.parameter import EnumParameter
 
-# from ..utils.state_translation import TranslationTable
 from . import units
-from .common import async_setup_entry_factory, Entity, EntityDescription
+from .common import (
+    async_setup_entry_factory,
+    Entity,
+    EntityDescription,
+    CmdParameterEntityDescription,
+    RemoteControlEntity,
+)
 
 _DeviceClass = sensor.const.SensorDeviceClass
 
 
-class SelectEntity(Entity, select.SelectEntity):
+class SelectEntity(Entity[EnumParameter], select.SelectEntity):
     entity_description: "SelectEntityDescription"
 
     @property
-    def _setting(self):
-        return self.entity_description.get(self._appliance)
-
-    @property
     def options(self):
-        return self._setting.values
+        return self._source.values
 
     @property
     def current_option(self) -> str | None:
-        return self._setting.value
+        return self._source.value
 
     async def async_select_option(self, option):
-        self._setting.value = option
+        self._source.value = option
         self.async_write_ha_state()
 
 
-class ConfigSelectEntity(SelectEntity):
-    @property
-    def available(self) -> bool:
-        a = (
-            super().available
-            and (p := self._appliance.attributes.get("remoteCtrValid")) is not None
-            and p.value == 1
-        )
-        return a
+# class ConfigSelectEntity(RemoteControlEntity, SelectEntity):
+#     pass
 
     # TODO: What async_select option should really do?
     # async def async_select_option(self, option: str) -> None:
@@ -52,117 +47,110 @@ class ConfigSelectEntity(SelectEntity):
 
 
 @dataclass(frozen=True, kw_only=True)
-class SelectEntityDescription(EntityDescription, select.SelectEntityDescription):
+class SelectEntityDescription(CmdParameterEntityDescription, select.SelectEntityDescription):
     # translation_table: TranslationTable = TranslationTable()
     entity_cls: ClassVar[type[SelectEntity]] = SelectEntity
+    command: ClassVar[str] = "settings"
 
 
 @dataclass(frozen=True, kw_only=True)
 class ConfigSelectEntityDescription(SelectEntityDescription):
-    entity_cls: ClassVar[type[ConfigSelectEntity]] = ConfigSelectEntity
+    command: ClassVar[str] = "startProgram"
     entity_category: ClassVar[EntityCategory] = EntityCategory.CONFIG
 
 
 ENTITIES = {
     ConfigSelectEntityDescription(
-        name="Program",
+        key="program",
         # translation_key=f"programs_{slug}",
-        value_picker=lambda a: a.settings["startProgram.program"],
     ),
     ConfigSelectEntityDescription(
-        name="Temperature",
+        key="temp",
+        # name="Temperature",
         icon="mdi:thermometer",
         device_class=_DeviceClass.TEMPERATURE,
         unit_of_measurement=units.CELSIUS,
-        value_picker=lambda a: a.settings["startProgram.temp"],
     ),
     ConfigSelectEntityDescription(
-        name="Spin speed",
+        key="spinSpeed",
         icon="mdi:numeric",
         unit_of_measurement=units.REVOLUTIONS_PER_MINUTE,
-        value_picker=lambda a: a.settings["startProgram.spinSpeed"],
     ),
     ConfigSelectEntityDescription(
-        name="Steam level",
+        key="steamLevel",
         icon="mdi:weather-dust",
         # translation_table=STEAM_LEVEL,
-        value_picker=lambda a: a.settings["startProgram.steamLevel"],
     ),
     ConfigSelectEntityDescription(
-        name="Dirt level",
+        key="dirtyLevel",
         icon="mdi:liquid-spot",
         # translation_table=DIRTY_LEVEL,
-        value_picker=lambda a: a.settings["startProgram.dirtyLevel"],
     ),
     ConfigSelectEntityDescription(
-        name="Stain Type",
+        key="extendedStainType",
+        # name="Stain Type",
         icon="mdi:liquid-spot",
-        value_picker=lambda a: a.settings["startProgram.extendedStainType"],
     ),
     ConfigSelectEntityDescription(
-        name="Dry Time",
+        key="waterLevel",
+        # name="Dry Time",
         icon="mdi:timer",
         unit_of_measurement=units.MINUTES,
-        value_picker=lambda a: a.settings["startProgram.dryTimeMM"],
     ),
     ConfigSelectEntityDescription(
-        name="Dry level",
+        key="dryLevel",
         icon="mdi:hair-dryer",
-        translation_key="dry_levels",
+        # translation_key="dry_levels",
         # translation_table=DRY_LEVEL,
-        value_picker=lambda a: a.settings["startProgram.dryLevel"],
     ),
     ConfigSelectEntityDescription(
-        name="Zone",
+        key="zone",
         icon="mdi:radiobox-marked",
-        translation_key="ref_zones",
-        value_picker=lambda a: a.settings["startProgram.zone"],
+        # translation_key="ref_zones",
     ),
     SelectEntityDescription(
-        name="Temperature",
+        key="tempSelZ3",
+        # name="Temperature",
         icon="mdi:thermometer",
         unit_of_measurement=units.CELSIUS,
-        value_picker=lambda a: a.settings["settings.tempSelZ3"],
     ),
     ConfigSelectEntityDescription(
-        name="Remaining Time",
+        key="remainingTime",
         icon="mdi:timer",
         unit_of_measurement=units.MINUTES,
-        value_picker=lambda a: a.settings["startProgram.remainingTime"],
     ),
     SelectEntityDescription(
-        name="Diffuser Level",
-        # translation_table=DIFFUSER_LEVEL,
-        translation_key="diffuser",
+        key="aromaStatus",
+        # name="Diffuser Level",
         icon="mdi:air-purifier",
-        value_picker=lambda a: a.settings["aromaStatus"],
+        # translation_table=DIFFUSER_LEVEL,
+        # translation_key="diffuser",
     ),
     SelectEntityDescription(
-        name="Mode",
+        key="machMode",
+        # name="Mode",
         icon="mdi:play",
         # translation_table=MACH_MODE,
-        value_picker=lambda a: a.settings["machMode"],
     ),
     SelectEntityDescription(
-        key="settings.humanSensingStatus",
-        name="Eco Pilot",
+        key="humanSensingStatus",
+        # name="Eco Pilot",
         icon="mdi:run",
         # translation_table=HUMAN_SENSE,
-        value_picker=lambda a: a.settings["humanSensingStatus"],
     ),
     SelectEntityDescription(
-        name="Fan Direction Horizontal",
+        key="windDirectionHorizontal",
+        # name="Fan Direction Horizontal",
         icon="mdi:fan",
         translation_key="fan_horizontal",
         # translation_table=POSITION_HORIZONTAL,
-        value_picker=lambda a: a.settings["windDirectionHorizontal"],
     ),
     SelectEntityDescription(
-        name="Fan Direction Vertical",
+        key="windDirectionVertical",
+        # name="Fan Direction Vertical",
         icon="mdi:fan",
         translation_key="fan_vertical",
         # translation_table=POSITION_VERTICAL,
-        value_picker=lambda a: a.settings["windDirectionVertical"],
     ),
 }
 

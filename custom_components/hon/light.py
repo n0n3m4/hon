@@ -1,61 +1,61 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from homeassistant.components import light
+from homeassistant.util.scaling import scale_ranged_value_to_int_range
 
+from pyhon.parameter import RangeParameter
 from .common import EntityDescription, Entity, async_setup_entry_factory
 
 
-class LightEntity(Entity, light.LightEntity):
+class LightEntity(Entity[RangeParameter], light.LightEntity):
     entity_description: "LightEntityDescription"
 
     @property
     def supported_color_modes(self) -> set[str]:
-        return (
-            {light.ColorMode.ONOFF}
-            if len(self.entity_description.get(self._appliance).values) == 2
-            else {light.ColorMode.BRIGHTNESS}
-        )
+        if len(self._source.values) == 2:
+            return {light.ColorMode.ONOFF}
+        else:
+            return {light.ColorMode.BRIGHTNESS}
 
     @property
     def is_on(self) -> bool:
-        return self.entity_description.get_value(self._appliance) > 0
+        return self._source.value > 0
 
     @property
     def brightness(self) -> int | None:
-        s = self.entity_description.get(self._appliance)
-        return round(s.value / s.max * 255)
+        s = self._source
+        return scale_ranged_value_to_int_range((s.min, s.max), (0, 255), s.value)
 
     async def async_set(self, value: int) -> None:
-        setting = self.entity_description.get(self._appliance)
-        setting.value = value
+        self._source.value = value
 
         # TODO: Implement command sending
         # await self._appliance.commands[self.entity_description.key.split(".")[0]].send()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        setting = self.entity_description.get(self._appliance)
+        s = self._source
 
-        percent = kwargs.get(light.ATTR_BRIGHTNESS, 255) / 255
-        value = round(setting.max * percent)
+        value = scale_ranged_value_to_int_range(
+            (0, 255), (s.min, s.max), kwargs.get(light.ATTR_BRIGHTNESS, 255)
+        )
 
         await self.async_set(value)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        value = self.entity_description.get(self._appliance).min
-
-        await self.async_set(value)
+        await self.async_set(self._source.min)
 
 
 @dataclass(frozen=True, kw_only=True)
 class LightEntityDescription(EntityDescription, light.LightEntityDescription):
-    entity_cls: type["LightEntity"] = LightEntity
+    sourceType: ClassVar[type[RangeParameter]] = RangeParameter
+    entity_cls: ClassVar[type[LightEntity]] = LightEntity
 
 
 ENTITIES = {
     LightEntityDescription(
+        key="lightStatus",
         name="Light",
-        value_picker=lambda a: a.settings["lightStatus"],
     ),
 }
 

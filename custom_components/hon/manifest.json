@@ -7,6 +7,6 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/Andre0512/hon/issues",
   "loggers": ["pyhon"],
-  "requirements": ["pyhOn @ git+https://github.com/IoTLabs-pl/pyhOn@dev"],
-  "version": "0.14.0-dev"
+  "requirements": ["pyhOn @ git+https://github.com/IoTLabs-pl/pyhOn@Cleanup"],
+  "version": "0.15.0-dev"
 }

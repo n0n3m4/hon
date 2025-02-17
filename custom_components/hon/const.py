@@ -11,16 +11,16 @@ MOBILE_ID: str = "homassistant"
 CONF_REFRESH_TOKEN = "refresh_token"
 
 PLATFORMS: list[str] = [
-    "sensor",
-    "select",
-    # "number",
-    # "switch",
-    # "button",
     "binary_sensor",
+    # "button",
     # "climate",
     # "fan",
-    "light",
+    # "light",
     # "lock",
+    # "number",
+    # "select",
+    "sensor",
+    # "switch",
 ]
 
 APPLIANCES: dict[str, str] = {
@@ -101,8 +101,6 @@ LANGUAGES: list[str] = [
 ]
 
 
-
-
 TUMBLE_DRYER_PR_PHASE: dict[int, str] = {
     0: "ready",
     1: "heat_stroke",
@@ -120,9 +118,6 @@ TUMBLE_DRYER_PR_PHASE: dict[int, str] = {
     19: "drying",
     20: "drying",
 }
-
-
-
 
 
 DISHWASHER_PR_PHASE: dict[int, str] = {
@@ -190,7 +185,6 @@ AP_DIFFUSER_LEVEL: dict[int, str] = {
 }
 
 REF_HUMIDITY_LEVELS: dict[int, str] = {1: "low", 2: "mid", 3: "high"}
-
 
 
 AC_POSITION_HORIZONTAL = {
