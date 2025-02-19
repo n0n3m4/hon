@@ -12,9 +12,12 @@ from .common import (
     async_setup_entry_factory,
     # Entity,
     RemoteControlEntity,
+    CommandBasedEntity,
     EntityDescription,
     Command
 )
+
+
 
 # _DATA_ARCHIVE_NOTIFICATION_MESSAGE = "\n\n".join(
 #     (
@@ -40,13 +43,12 @@ from .common import (
 #     entity_description: "ButtonEntityDescription"
 
 
-class ButtonEntity(RemoteControlEntity, button.ButtonEntity):
+class ButtonEntity(CommandBasedEntity, button.ButtonEntity):
     entity_description: "ButtonEntityDescription"
 
     async def async_press(self) -> None:
-        # TODO: Check command sending
-        await self._source.send()
-        await self.appliance.commands[self.entity_description.key].send()
+        payload = self._source.create_payload_template()
+        await self._source.execute(payload)
 
 
 # class DataArchiveButtonEntity(DiagnosticButtonEntity):
@@ -88,7 +90,6 @@ class ButtonEntity(RemoteControlEntity, button.ButtonEntity):
 @dataclass(frozen=True, kw_only=True)
 class ButtonEntityDescription(EntityDescription, button.ButtonEntityDescription):
     entity_cls: ClassVar[type["ButtonEntity"]] = ButtonEntity
-    sourceType: ClassVar[type["Command"]] = Command
 
 
 ENTITIES = {

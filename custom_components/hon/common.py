@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 from pyhon.entities.parameter import Parameter
+from pyhon.entities.command import Command
 from pyhon.entities.observer import Subscriber
 # from pyhon.commands import HonCommand as Command
 
@@ -125,6 +126,11 @@ class RemoteControlEntity(Generic[T], Entity[T]):
             and (p := self.appliance.parameters.get("remoteCtrValid")) is not None
             and p.data.value == 1
         )
+    
+class CommandBasedEntity(Entity[Command]):
+    @cached_property
+    def _source(self) -> Command:
+        return self.appliance.commands[self.entity_description.key]
 
 
 def async_setup_entry_factory(entity_descriptions: Iterable[EntityDescription]):

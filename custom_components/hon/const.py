@@ -12,7 +12,7 @@ CONF_REFRESH_TOKEN = "refresh_token"
 
 PLATFORMS: list[str] = [
     "binary_sensor",
-    # "button",
+    "button",
     # "climate",
     # "fan",
     # "light",
