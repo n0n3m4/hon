@@ -1,7 +1,5 @@
 {
     "name": "Haier hOn",
     "homeassistant": "2024.2.0",
-    "zip_release": true,
-    "filename": "haier_hon.zip", 
     "hide_default_branch": false
 }
