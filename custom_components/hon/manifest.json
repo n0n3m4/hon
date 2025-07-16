@@ -13,7 +13,7 @@
     "pyhon"
   ],
   "requirements": [
-    "git+git+https://github.com/n0n3m4/hon"
+    "git+https://github.com/n0n3m4/hon"
   ],
   "version": "0.14.2-beta.1"
 }
